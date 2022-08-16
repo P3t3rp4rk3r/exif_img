@@ -180,7 +180,7 @@ def save(path: str, img: ExifImage) -> None:
         # On sépare les deux
         name_ext = os.path.splitext(full_name)
         # On crée le nouveau nom de fichier en ajoutant  "-modified" avant l'extension
-        new_path = os.path.dirname(path) + name_ext[0] + "-modified" + name_ext[1]
+        new_path = os.path.join(os.path.dirname(path), name_ext[0] + "-modified" + name_ext[1])
         # On crée le fichier et on sauve les données modifieés de l'image
         with open(new_path, 'wb') as new_image_file:
             new_image_file.write(img.get_file())
