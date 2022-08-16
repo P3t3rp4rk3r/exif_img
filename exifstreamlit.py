@@ -153,11 +153,11 @@ def display(img: ExifImage) -> None:
         try:
             if tag not in fields_ignore:
                 value = img[tag]  # La valeur pour laquelle on veut créer une entrée
-                readonly = tag in fields_read_only
+                readonly = tag in fields_read_only  # Le champ est en lecture seule ?
                 out = create_input(tag, value, readonly)  # On crée l'entrée
                 try:
-                    # S'il y a une sortie et que l'on peut l'écrire...
-                    if out is not None and tag not in fields_read_only:
+                    # S'il y a une sortie, que l'on peut l'écrire et qu'elle a changée...
+                    if out is not None and tag not in fields_read_only and out != img[tag] != out:
                         img[tag] = out
                 except TypeError as e:
                     print(tag, e)  # Il y a un bug quelque part, on ignore silencieusement
