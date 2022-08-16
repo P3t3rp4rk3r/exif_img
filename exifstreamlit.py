@@ -28,20 +28,6 @@ def pretty_name(name: str) -> str:
     return name[0].upper() + name[1:].lower().replace('_', ' ')
 
 
-def is_int(value: str) -> bool:
-    """Indique si une chaine représente un entier"""
-    return value[1:].isdecimal() if value.startswith('-') or value.startswith('+') else value.isdecimal()
-
-
-def is_float(value: str) -> bool:
-    """Indique si une chaine représente un float"""
-    try:
-        float(value)
-    except ValueError:
-        return False
-    return True
-
-
 def create_text_input(tag: str, value: str, readonly: bool) -> str:
     """Crée une entrée de texte"""
     return st.text_input(pretty_name(tag), value=value, disabled=readonly)
@@ -64,49 +50,67 @@ def create_boolean_input(tag: str, value: bool, readonly: bool) -> bool:
 
 def create_date_input(tag: str, value: str, readonly: bool) -> str:
     """Crée une entrée pour une date et une heure"""
+    # Conversion de la chaine de caractères en datetime
     value = datetime.strptime(value, "%Y:%m:%d %H:%M:%S")
+    # On affiche le nom du champ
     st.write(pretty_name(tag))
+    # On crée deux colonnes
     col1, col2 = st.columns(2)
     with col1:
+        # Dans la première, on affiche la date
         date = st.date_input('Date', value=value, key=tag + '.date', disabled=readonly)
     with col2:
+        # Dans la deuxième, on affiche l'heure
         time = st.time_input('Time', value=value, key=tag + '.time', disabled=readonly)
+    # On combine les deux et on retourne le datetime sous forme de chaine de caractères
     return datetime.combine(date, time).strftime("%Y:%m:%d %H:%M:%S")
 
 
-def create_options_input(tag: str, value: Enum, readonly: bool) -> Enum:
+def create_enum_input(tag: str, value: Enum, readonly: bool) -> Enum:
     """Crée une entrée avec un choix dans une liste"""
+    # Le type de l'énumération
     value_type = type(value)
+    # La liste des valeurs possibles de cette énumération
     values = list(value_type)
+    # On dérive des valeurs de l'énumération les étiquettes
     labels = [pretty_name(i.name) for i in value_type]
+    # On cherche l'index de la valeur dans la liste
     index = values.index(value)
+    # On affiche les étiquettes et on sélectionne la valeur dans cette liste
     option = st.selectbox(pretty_name(tag), labels, index=index, disabled=readonly)
+    # On cherche quelle étiquette a été sélectionnée
     index = labels.index(option)
+    # On retourne la valeur de l'énumération correspondante
     return values[index]
 
 
-def create_flash(flash: Flash) -> None:
+def create_flash_inputs(flash: Flash) -> None:
     """Crée les entrées pour un objet Flash"""
+    # On affiche le nom du champ
     st.write('Flash')
     with st.expander("Flash"):
         flash.flash_fired = create_boolean_input('flash_fired', flash.flash_fired, False)
         flash.flash_function_not_present = create_boolean_input('flash_function_not_present',
                                                                 flash.flash_function_not_present, False)
-        flash.flash_mode = create_options_input('flash_mode', flash.flash_mode, False)
-        flash.flash_return = create_options_input('flash_return', flash.flash_return, False)
+        flash.flash_mode = create_enum_input('flash_mode', flash.flash_mode, False)
+        flash.flash_return = create_enum_input('flash_return', flash.flash_return, False)
         flash.red_eye_reduction_supported = create_boolean_input('red_eye_reduction_supported',
                                                                  flash.red_eye_reduction_supported, False)
 
 
-def create_tuple(tag: str, value: Tuple[Any], readonly: bool) -> Tuple[Any]:
+def create_tuple_inputs(tag: str, value: Tuple[Any], readonly: bool) -> Tuple[Any]:
     """Crée des entrées pour un tuple"""
+    # On affiche le nom du champ
     st.write(pretty_name(tag))
+    # On crée une colonne par élément du tuple
     nb_cols = len(value)
     cols = st.columns(nb_cols)
-    out = []
-    for i in range(nb_cols):
+    out = []  # Une liste pour la valeur de retour
+    for i in range(nb_cols):  # Pour chaque élément du tuole
         with cols[i]:
+            # On crée un élément dans la colonne
             out.append(create_input(f'Value #{i}', value[i], readonly))
+    # On retourne la valeur de retour sous forme d'un tuple
     return tuple(out)
 
 
@@ -115,7 +119,7 @@ def create_input(tag: str, value: Any, readonly: bool) -> Any:
 
     # On teste les différents cas
     if isinstance(value, Enum):
-        return create_options_input(tag, value, readonly)
+        return create_enum_input(tag, value, readonly)
     elif isinstance(value, float):
         return create_float_input(tag, value, readonly)
     elif isinstance(value, int):
@@ -123,23 +127,22 @@ def create_input(tag: str, value: Any, readonly: bool) -> Any:
     elif isinstance(value, bool):
         return create_boolean_input(tag, value, readonly)
     elif isinstance(value, tuple):
-        return create_tuple(tag, value, readonly)
+        return create_tuple_inputs(tag, value, readonly)
     elif tag.startswith("datetime"):
         return create_date_input(tag, value, readonly)
     elif isinstance(value, str):
         return create_text_input(tag, value, readonly)
     elif tag == 'flash':
-        create_flash(value)
+        create_flash_inputs(value)
     else:
         print(f'Unknown type {type(value)} for tag {tag}')
-
     return None
 
 
 def load(path: str) -> ExifImage:
     """Charge une image et l'affiche"""
     image = Image.open(path)
-    st.image(image, caption=path)
+    st.image(image, caption=os.path.basename(path))
 
     with open(path, 'rb') as f:
         img = ExifImage(f)
@@ -172,11 +175,16 @@ def display(img: ExifImage) -> None:
 def save(path: str, img: ExifImage) -> None:
     """Save une image modifiée"""
     if st.button("Save"):
+        # Le nom + extension du fichier
         full_name = os.path.basename(path)
+        # On sépare les deux
         name_ext = os.path.splitext(full_name)
+        # On crée le nouveau nom de fichier en ajoutant  "-modified" avant l'extension
         new_path = os.path.dirname(path) + name_ext[0] + "-modified" + name_ext[1]
+        # On crée le fichier et on sauve les données modifieés de l'image
         with open(new_path, 'wb') as new_image_file:
             new_image_file.write(img.get_file())
+        # On affiche un message de succès
         st.success(f'File {new_path} saved')
 
 
@@ -237,7 +245,7 @@ def show_trips() -> None:
 
 def main():
     # L'image à charger
-    image_path = 'IMG_3197.jpg' if len(sys.argv) <= 1 else sys.argv[1]
+    image_path = os.path.abspath('IMG_3197.jpg' if len(sys.argv) <= 1 else sys.argv[1])
     # Titre
     st.title("EXIF information")
     # On charge l'image
