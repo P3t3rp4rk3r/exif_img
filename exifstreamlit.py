@@ -89,13 +89,17 @@ def create_flash_inputs(flash: Flash) -> None:
     # On affiche le nom du champ
     st.write('Flash')
     with st.expander("Flash"):
-        flash.flash_fired = create_boolean_input('flash_fired', flash.flash_fired, False)
-        flash.flash_function_not_present = create_boolean_input('flash_function_not_present',
-                                                                flash.flash_function_not_present, False)
+        flash.flash_fired = create_boolean_input('flash_fired', flash.flash_fired,
+                                                 False)
+        flash.flash_function_not_present = \
+            create_boolean_input('flash_function_not_present',
+                                 flash.flash_function_not_present, False)
         flash.flash_mode = create_enum_input('flash_mode', flash.flash_mode, False)
-        flash.flash_return = create_enum_input('flash_return', flash.flash_return, False)
-        flash.red_eye_reduction_supported = create_boolean_input('red_eye_reduction_supported',
-                                                                 flash.red_eye_reduction_supported, False)
+        flash.flash_return = create_enum_input('flash_return', flash.flash_return,
+                                               False)
+        flash.red_eye_reduction_supported = \
+            create_boolean_input('red_eye_reduction_supported',
+                                 flash.red_eye_reduction_supported, False)
 
 
 def create_tuple_inputs(tag: str, value: Tuple[Any], readonly: bool) -> Tuple[Any]:
@@ -202,11 +206,15 @@ def gps_convert_tuple(gps: Tuple, dir: str):
 def show_map(path: str, img: ExifImage) -> None:
     """Affiche un plan centrée sur le lieu de prise d'une image"""
     st.subheader("Emplacement de la prise de la photo")
+    # On calcule les coordonnées en degrés
     latitude = gps_convert_tuple(img.gps_latitude, img.gps_latitude_ref)
     longitude = gps_convert_tuple(img.gps_longitude, img.gps_longitude_ref)
+    # On crée la carte
     m = folium.Map(location=[latitude, longitude], zoom_start=10)
+    # On place un marqueur au coordonnées
     folium.Marker([latitude, longitude],
                   tooltip=path).add_to(m)
+    # On affiche la carte
     st_folium(m, width=800)
 
 
@@ -235,11 +243,17 @@ past_locations = [
 def show_trips() -> None:
     """Affiche sur une carte du monde les lieux de voyage ou d'habitation"""
     st.subheader("Lieux d'habitation et voyages")
-    points = [[p[0], p[1]] for p in past_locations]
+    # On crée la carte
     m = folium.Map(width=800)
+    # On parcourt la liste
     for p in past_locations:
+        # On crée un marqueur par endroit avec le nom de la ville
         folium.Marker([p[0], p[1]], tooltip=p[2]).add_to(m)
+    # Liste uniquement des coordonnées
+    points = [[p[0], p[1]] for p in past_locations]
+    # On joint tous les lieux
     folium.PolyLine(points).add_to(m)
+    # On affiche la carte
     st_folium(m, width=800, height=400)
 
 
